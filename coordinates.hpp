@@ -49,6 +49,12 @@ struct LookDirection {
 
 template <typename ValueType = float>
 struct CartesianDirected : public Cartesian<ValueType>, public LookDirection<ValueType> {
+private:
+	ValueType mymod(ValueType x, ValueType y) {
+		return x - y * std::floor(x/y);
+	}
+	static constexpr ValueType view_bias = 0.1;
+public:
 	using Cartesian = Cartesian<ValueType>;
 	using LookDirection = LookDirection<ValueType>;
 
@@ -88,7 +94,7 @@ struct CartesianDirected : public Cartesian<ValueType>, public LookDirection<Val
 	}
 	CartesianDirected& turnRight(ValueType angle) {
 		alfa += angle;
-		alfa = std::fmod<ValueType>(alfa + M_PI , 2.0f * M_PI) - M_PI;
+		alfa = mymod(alfa, 2*M_PI);
 		return *this;
 	}
 	CartesianDirected& turnLeft(ValueType angle) {
@@ -96,8 +102,8 @@ struct CartesianDirected : public Cartesian<ValueType>, public LookDirection<Val
 	}
 	Cartesian& turnUp(ValueType angle) {
 		gamma += angle;
-		gamma = std::min<ValueType>(gamma, M_PI/2.f);
-		gamma = std::max<ValueType>(gamma, -M_PI/2.f);
+		gamma = std::min<ValueType>(gamma, M_PI/2.f - view_bias);
+		gamma = std::max<ValueType>(gamma, -M_PI/2.f + view_bias);
 		return *this;
 	}
 	Cartesian& turnDown(ValueType angle) {
