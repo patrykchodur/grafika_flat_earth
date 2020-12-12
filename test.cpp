@@ -14,7 +14,78 @@ struct Spherical
 	float getZ() { return distance * std::cos(theta)*std::sin(fi); }
 };
 
-Spherical camera(3.0f, 0.2f, 1.2f), light_position(4.0f, 0.2f, 1.2f);
+struct Cartesian {
+	float x, y, z;
+	Cartesian(float x, float y, float z) : x(x), y(y), z(z) { }
+	float getX() { return x; }
+	float getY() { return y; }
+	float getZ() { return z; }
+	friend std::ostream& operator<<(std::ostream& stream, const Cartesian& cart) {
+		stream << "Cartesian: x=" << cart.x << ", y=" << cart.y << ", z=" << cart.z;
+		return stream;
+	}
+};
+
+struct LookDirection {
+	// alfa: left - right - -M_PI : M_PI
+	// gamma: bottom - top - -M_PI/2 : M_PI/2
+	float alfa, gamma;
+	LookDirection(float alfa, float gamma) : alfa(alfa), gamma(gamma) { }
+};
+
+struct CartesianDirected : public Cartesian, public LookDirection {
+	CartesianDirected(Cartesian car, LookDirection dir) : Cartesian(car), LookDirection(dir) { }
+	CartesianDirected(const CartesianDirected&) = default;
+	CartesianDirected(CartesianDirected&&) = default;
+	CartesianDirected& moveForward(float dist) {
+		x += std::cos(alfa) * std::cos(gamma) * dist;
+		y += std::sin(alfa) * std::cos(gamma) * dist;
+		z += std::sin(gamma) * dist;
+		return *this;
+	}
+	CartesianDirected& moveRight(float dist) {
+		x += std::sin(alfa) * dist;
+		y -= std::cos(alfa) * dist;
+		return *this;
+	}
+	CartesianDirected& moveLeft(float dist) {
+		return moveRight(-dist);
+	}
+	CartesianDirected& moveUp(float dist) {
+		z += dist;
+		return *this;
+	}
+	CartesianDirected& turnRight(float angle) {
+		alfa += angle;
+		alfa = std::fmodf(alfa + M_PI , 2.0f * M_PI) - M_PI;
+		return *this;
+	}
+	Cartesian& turnUp(float angle) {
+		gamma += angle;
+		gamma = std::fmin(gamma, M_PI/2.f);
+		gamma = std::fmax(gamma, -M_PI/2.f);
+		return *this;
+	}
+	Cartesian getCurrentPoint() const { return *this; }
+	Cartesian getLookAtPoint() const {
+		auto result = *this;
+		result.moveForward(1.0);
+		return result;
+	}
+	Cartesian getNorth() const {
+		auto result = *this;
+		result.moveUp(1.0);
+		return result;
+	}
+	friend std::ostream& operator<<(std::ostream& stream, const CartesianDirected& cart) {
+		stream << "CartesianDirected: x=" << cart.x << ", y=" << cart.y << ", z=" << cart.z << ", alfa=" << cart.alfa << ", gamma=" << cart.gamma;
+		return stream;
+	}
+};
+
+
+Spherical /* camera(3.0f, 0.2f, 1.2f), */ light_position(4.0f, 0.2f, 1.2f);
+CartesianDirected camera({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f});
 sf::Vector3f pos(0.0f, 0.0f, 0.0f), scale(1.0f, 1.0f, 1.0f), rot(0.0f, 0.0f, 0.0f);
 unsigned char projection_type = 'p';
 float fov = 45.0f;
@@ -85,10 +156,22 @@ void drawScene()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 
-	Spherical north_of_camera(camera.distance, camera.theta + 0.01f, camera.fi); 
-	gluLookAt(camera.getX(), camera.getY(), camera.getZ(), 
-			0.0, 0.0, 0.0, 
-			north_of_camera.getX(), north_of_camera.getY(), north_of_camera.getZ());
+	auto currentPoint = camera.getCurrentPoint();
+	auto lookAtPoint = camera.getLookAtPoint();
+	auto northPoint = camera.getNorth();
+	std::cout << "\n\n\n";
+	std::cout << "\033[3A";
+	std::cout << "currentPoint: " << currentPoint << '\n';
+	std::cout << "lookAtPoint: " << lookAtPoint << '\n';
+	std::cout << "northPoint: " << northPoint << '\n';
+	std::cout << "\033[3A";
+	// Spherical north_of_camera(camera.distance, camera.theta + 0.01f, camera.fi); 
+	gluLookAt(currentPoint.getX(), currentPoint.getY(), currentPoint.getZ(), 
+			lookAtPoint.getX(), lookAtPoint.getY(), lookAtPoint.getZ(), 
+			// northPoint.getX(), northPoint.getY(), northPoint.getZ()
+			0, 0, 1e15
+			);
+
 	GLfloat light0_position[4] = { light_position.getX(), light_position.getY(), light_position.getZ(), 0.0f }; 
 	glLightfv(GL_LIGHT0, GL_POSITION, light0_position); 
 
@@ -187,8 +270,8 @@ int main(int argc, char* argv[])
 			}
 			if (event.type == sfe::MouseMoved && sf::Mouse::isButtonPressed(sf::Mouse::Left))
 			{
-				camera.fi += 2.0f / window.getSize().x *(event.mouseMove.x - mouse_last_position.x);
-				camera.theta += 2.0f / window.getSize().y*(event.mouseMove.y - mouse_last_position.y);
+				camera.turnRight(4.0f / window.getSize().x *(event.mouseMove.x - mouse_last_position.x));
+				camera.turnUp(4.0f / window.getSize().y*(event.mouseMove.y - mouse_last_position.y));
 				mouse_last_position = sf::Vector2i(event.mouseMove.x, event.mouseMove.y);
 			}
 
@@ -203,13 +286,15 @@ int main(int argc, char* argv[])
 			}
 
 		}
-		if (sfk::isKeyPressed(sfk::Left)) camera.fi -= 0.01f; 
-		if (sfk::isKeyPressed(sfk::Right)) camera.fi += 0.01f; 
-		if (sfk::isKeyPressed(sfk::Up)) camera.theta += 0.01f; 
-		if (sfk::isKeyPressed(sfk::Down)) camera.theta -= 0.01f;
+		if (sfk::isKeyPressed(sfk::Left)) camera.moveLeft(0.01f);
+		if (sfk::isKeyPressed(sfk::Right)) camera.moveRight(0.01f);
+		if (sfk::isKeyPressed(sfk::Up)) camera.moveUp(0.01f);
+		if (sfk::isKeyPressed(sfk::Down)) camera.moveUp(-0.01f);
 
-		if (sfk::isKeyPressed(sfk::W)) camera.distance -= 0.01f;
-		if (sfk::isKeyPressed(sfk::S)) camera.distance += 0.01f;
+		if (sfk::isKeyPressed(sfk::W)) camera.moveForward(0.01f), std::cout << camera << '\n';
+		if (sfk::isKeyPressed(sfk::S)) camera.moveForward(-0.01f);
+		if (sfk::isKeyPressed(sfk::A)) camera.moveLeft(0.01f);
+		if (sfk::isKeyPressed(sfk::D)) camera.moveRight(0.01f);
 		/*
 		if (sfk::isKeyPressed(sfk::I)) light_position.fi -= 0.01f; 
 		if (sfk::isKeyPressed(sfk::O)) light_position.fi += 0.01f; 
