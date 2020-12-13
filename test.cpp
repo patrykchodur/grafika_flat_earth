@@ -16,8 +16,11 @@ float timer = 0.0;
 
 sf::Texture TEXid;
 sf::Shader shader[1];
-sf::Vector3f flag[20][20]; //new
-sf::Vector2f flag_texcoord[20][20]; //new
+
+constexpr size_t water_polygons = 500;
+
+sf::Vector3f flag[water_polygons][water_polygons]; //new
+sf::Vector2f flag_texcoord[water_polygons][water_polygons]; //new
 
 constexpr auto move_speed = 0.01f;
 constexpr auto look_speed = 2.0f;
@@ -39,15 +42,15 @@ void initOpenGL(void)
 	shader[0].loadFromFile("shader_3.vert", "shader_3.frag");
 
 	// ----------------------- begin new -----------------------------------
-	for (int x = 0; x < 20; x++)
-		for (int y = 0; y < 20; y++)
+	for (int x = 0; x < water_polygons; x++)
+		for (int y = 0; y < water_polygons; y++)
 		{
-			flag[x][y].x = (x - 10) * 0.1f;
-			flag[x][y].y = 0.0f;
-			flag[x][y].z = (y - 10) * 0.1f;
+			flag[x][y].x = 2*x / static_cast<float>(water_polygons) - 1.0f; // (x - 10) * 0.1f;
+			flag[x][y].y = 2*y / static_cast<float>(water_polygons) - 1.0f; // (y - 10) * 0.1f; // -1:1
+			flag[x][y].z = 0.0f;
 
 			flag_texcoord[x][y].x = (flag[x][y].x + 1.0f) / 2.0f;
-			flag_texcoord[x][y].y = (flag[x][y].z + 1.0f) / 2.0f;
+			flag_texcoord[x][y].y = (flag[x][y].y + 1.0f) / 2.0f;
 		}
 	// ----------------------- end new -----------------------------------
 }
@@ -123,8 +126,8 @@ void drawScene()
 	sf::Shader::bind(&shader[0]);
 
 	glBegin(GL_QUADS);
-	for (int x = 0; x < 19; x++)
-		for (int y = 0; y < 19; y++)
+	for (int x = 0; x < water_polygons - 1; x++)
+		for (int y = 0; y < water_polygons - 1; y++)
 		{
 			glTexCoordsf(flag_texcoord[x][y]);         glVertexsf(flag[x][y]);
 			glTexCoordsf(flag_texcoord[x + 1][y]);     glVertexsf(flag[x + 1][y]);
@@ -137,6 +140,9 @@ void drawScene()
 	glDisable(GL_TEXTURE_2D);
 
 	//----------- end new ---------------------------
+	
+
+	// printing flat earth model
 }
 
 int main(int argc, char* argv[])
@@ -156,7 +162,7 @@ int main(int argc, char* argv[])
 		sfe event;
 		sf::Time elapsed = clock.restart(); 
 		timer += elapsed.asSeconds(); 
-		shader[0].setUniform("time", timer);
+		shader[0].setUniform("time", 4 * timer);
 		while (window.pollEvent(event))
 		{
 			if (event.type == sfe::Closed || (event.type == sfe::KeyPressed && event.key.code == sfk::Escape))

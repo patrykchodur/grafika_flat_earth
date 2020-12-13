@@ -11,7 +11,7 @@ set(CMAKE_CXX_FLAGS "-Wall -g -Wunused-const-variable")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(source_files pch.cpp test.cpp materials.cpp)
+set(source_files pch.cpp test.cpp materials.cpp objloader.cpp)
 
 add_executable(${PROJECT_NAME} ${source_files})
 

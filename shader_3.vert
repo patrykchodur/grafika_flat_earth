@@ -6,7 +6,7 @@ void main()
 	vTexCoord = gl_MultiTexCoord0.xy;
 	vec4 myVertexLoc = gl_Vertex;
 
-	myVertexLoc.y = 0.2*sin((gl_Vertex.x*2.0) - time)*cos((gl_Vertex.z*2.0) + time);
+	myVertexLoc.z = 0.001*sin((gl_Vertex.x*100.0) - time)*cos((gl_Vertex.y*100.0) + time);
 
 	gl_Position = gl_ModelViewProjectionMatrix * myVertexLoc;
 }
