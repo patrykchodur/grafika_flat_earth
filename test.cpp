@@ -15,7 +15,8 @@ void checkGLError()
     }
 }
 
-
+Cartesian sun_position(0.6f, 0.0f, 0.6f);
+constexpr float sun_dist = 0.6f;
 Spherical light_position(4.0f, 0.2f, 1.2f);
 CartesianDirected camera({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f});
 sf::Vector3f pos(0.0f, 0.0f, 0.0f), scale(1.0f, 1.0f, 1.0f), rot(0.0f, 0.0f, 0.0f);
@@ -27,6 +28,8 @@ sf::Texture TEXid;
 sf::Shader shader[1];
 
 sf::Texture earth_texture;
+
+sf::Texture skybox_texture;
 
 constexpr size_t water_polygons = 500;
 
@@ -57,6 +60,7 @@ void initOpenGL(void)
 
 	TEXid.loadFromFile("water.jpg");
 	earth_texture.loadFromFile("flat_earth_texture.png");
+	skybox_texture.loadFromFile("skybox.jpg");
 
 	shader[0].loadFromFile("shader_3.vert", "shader_3.frag");
 
@@ -108,8 +112,70 @@ void drawScene()
 			northPoint.getX(), northPoint.getY(), northPoint.getZ()
 			);
 
-	GLfloat light0_position[4] = { light_position.getX(), light_position.getY(), light_position.getZ(), 0.0f }; 
+	GLfloat light0_position[4] = { sun_position.getX(), sun_position.getY(), sun_position.getZ(), 0.0f }; 
 	glLightfv(GL_LIGHT0, GL_POSITION, light0_position); 
+
+
+	sf::Vector2f texture_corner;
+	float skybox_width = 32.f;
+	sf::Vector3f skybox_corner = {-skybox_width/2.f, -skybox_width/2.f + 0.01f, -skybox_width/2.f};
+	// drawing skybox
+	glDisable(GL_LIGHTING);
+	glEnable(GL_TEXTURE_2D);
+	sf::Texture::bind(&skybox_texture);
+
+	glPushMatrix();
+	glTranslatef(camera.getX(), camera.getY(), camera.getZ());
+
+	auto draw_box = [&] (sf::Vector2f texture_corner, sf::Vector3f skybox_corner) {
+		glBegin(GL_QUADS);
+			glTexCoord2f(texture_corner.x, texture_corner.y);
+			glVertex3f(skybox_corner.x, skybox_corner.y, skybox_corner.z);
+			glTexCoord2f(texture_corner.x, texture_corner.y + 1.f/3.f);
+			glVertex3f(skybox_corner.x, skybox_corner.y, skybox_corner.z + skybox_width);
+			glTexCoord2f(texture_corner.x + 1.f/4.f, texture_corner.y + 1.f/3.f);
+			glVertex3f(skybox_corner.x + skybox_width, skybox_corner.y, skybox_corner.z + skybox_width);
+			glTexCoord2f(texture_corner.x + 1.f/4.f, texture_corner.y);
+			glVertex3f(skybox_corner.x + skybox_width, skybox_corner.y, skybox_corner.z);
+		glEnd();
+	};
+
+	glColor3f(1.f, 1.f, 1.f);
+	texture_corner = {0.f, 1.f/3.f};
+	draw_box(texture_corner, skybox_corner);
+
+	glRotatef(90.f, 0, 0, 1);
+
+	texture_corner = {1.f/4.f, 1.f/3.f};
+	draw_box(texture_corner, skybox_corner);
+
+	glRotatef(90.f, 0, 0, 1);
+
+	texture_corner = {2.f/4.f, 1.f/3.f};
+	draw_box(texture_corner, skybox_corner);
+
+	glRotatef(90.f, 0, 0, 1);
+
+	texture_corner = {3.f/4.f, 1.f/3.f};
+	draw_box(texture_corner, skybox_corner);
+
+	glRotatef(90.f, 1, 0, 0);
+
+	texture_corner = {2.f/4.f, 0.f/3.f};
+	draw_box(texture_corner, skybox_corner);
+
+	glRotatef(180.f, 1, 0, 0);
+
+	texture_corner = {2.f/4.f, 2.f/3.f};
+	draw_box(texture_corner, skybox_corner);
+
+
+	glPopMatrix();
+
+
+	glDisable(GL_TEXTURE_2D);
+	glEnable(GL_LIGHTING);
+	
 
 	glDisable(GL_LIGHTING);
 	glBegin(GL_LINES);
@@ -232,6 +298,66 @@ void drawScene()
 	glDisableVertexAttribArray(1);
 	*/
 
+
+	// drawing sun
+	GLUquadricObj* qobj = gluNewQuadric();
+	gluQuadricDrawStyle(qobj, GLU_FILL);
+	gluQuadricNormals(qobj, GLU_SMOOTH);
+
+	/*
+	glPushMatrix();
+	glColor3f(1.0f, 0.0f, 0.0f);
+	glTranslatef(0.75f, 0, 0);
+	glRotatef(300, 0, 0, 0);
+	gluCylinder(qobj, 0.25f, 0.5f, 0.25f, 15, 5);
+	glPopMatrix();
+	*/
+
+	// glDisable(GL_COLOR_MATERIAL);
+	glDisable(GL_LIGHTING);
+	glPushMatrix();
+	// glMaterialfv(GL_FRONT, GL_AMBIENT, PolishedGoldAmbient);
+	// glMaterialfv(GL_FRONT, GL_DIFFUSE, PolishedGoldDiffuse);
+	// glMaterialfv(GL_FRONT, GL_SPECULAR, PolishedGoldSpecular);
+	// glMaterialf(GL_FRONT, GL_SHININESS, PolishedGoldShininess);
+	glColor3f(1.0f, 1.0f, 0.8f);
+	glTranslatef(sun_position.getX(), sun_position.getY(), sun_position.getZ());
+	glRotatef(0, 0, 0, 0);
+	gluSphere(qobj, 0.07f, 50, 50);
+	glPopMatrix();
+	glEnable(GL_LIGHTING);
+	// glEnable(GL_COLOR_MATERIAL);
+
+	gluDeleteQuadric(qobj);
+
+	// drawing moon
+	qobj = gluNewQuadric();
+	gluQuadricDrawStyle(qobj, GLU_FILL);
+	gluQuadricNormals(qobj, GLU_SMOOTH);
+
+	/*
+	glPushMatrix();
+	glColor3f(1.0f, 0.0f, 0.0f);
+	glTranslatef(0.75f, 0, 0);
+	glRotatef(300, 0, 0, 0);
+	gluCylinder(qobj, 0.25f, 0.5f, 0.25f, 15, 5);
+	glPopMatrix();
+	*/
+
+	glDisable(GL_COLOR_MATERIAL);
+	glPushMatrix();
+	glMaterialfv(GL_FRONT, GL_AMBIENT, BronzeAmbient);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, BronzeDiffuse);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, BronzeSpecular);
+	glMaterialf(GL_FRONT, GL_SHININESS, BronzeShininess);
+	glColor3f(0, 0, 1.0f);
+	glTranslatef(-sun_position.getX(), -sun_position.getY(), sun_position.getZ());
+	glRotatef(0, 0, 0, 0);
+	gluSphere(qobj, 0.07f, 50, 50);
+	glPopMatrix();
+	glEnable(GL_COLOR_MATERIAL);
+
+	gluDeleteQuadric(qobj);
 }
 
 void load_flat_earth() {
@@ -287,6 +413,8 @@ int main(int argc, char* argv[])
 		sf::Time elapsed = clock.restart(); 
 		timer += elapsed.asSeconds(); 
 		shader[0].setUniform("time", 4 * timer);
+		sun_position.x = sun_dist * std::cos(timer);
+		sun_position.y = sun_dist * std::sin(timer);
 		while (window.pollEvent(event))
 		{
 			if (event.type == sfe::Closed || (event.type == sfe::KeyPressed && event.key.code == sfk::Escape))
