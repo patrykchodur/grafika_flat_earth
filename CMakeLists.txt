@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.7)
-project(zajecia3)
+project(projekt_grafika)
 
 find_package(SFML COMPONENTS REQUIRED graphics window system)
 find_package(OpenGL REQUIRED)
@@ -11,7 +11,7 @@ set(CMAKE_CXX_FLAGS "-Wall -g -Wunused-const-variable")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(source_files pch.cpp test.cpp materials.cpp objloader.cpp)
+set(source_files pch.cpp main.cpp materials.cpp objloader.cpp)
 set(assets shader_3.frag shader_3.vert flat_earth.obj skybox.jpg flat_earth_texture.png water.jpg)
 
 add_executable(${PROJECT_NAME} ${source_files})
