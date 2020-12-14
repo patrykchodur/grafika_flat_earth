@@ -9,8 +9,9 @@ typedef sf::Keyboard sfk;
 
 
 Cartesian sun_position(0.6f, 0.0f, 0.6f);
-CartesianDirected camera({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f});
+CartesianDirected camera({0.0f, -4.0f, 2.0f}, {M_PI/2.f, -M_PI/8.f});
 float timer = 0.0;
+float timer_multiplier = 0.0f;
 
 sf::Texture TEXid;
 sf::Shader shader[1];
@@ -18,7 +19,7 @@ sf::Shader shader[1];
 sf::Texture earth_texture;
 sf::Texture skybox_texture;
 
-constexpr size_t water_polygons = 500;
+constexpr size_t water_polygons = 512;
 constexpr float skybox_width = 32.f;
 constexpr float sun_dist = 0.6f;
 
@@ -302,10 +303,12 @@ int main(int argc, char* argv[])
 	{
 		sfe event;
 		sf::Time elapsed = clock.restart(); 
-		timer += elapsed.asSeconds(); 
+		timer += std::exp(timer_multiplier) * elapsed.asSeconds(); 
+		if (timer > 8640.f * 2 * M_PI)
+			timer = fmod(timer, 8640.f * 2 * M_PI);
 		shader[0].setUniform("time", 4 * timer);
-		sun_position.x = sun_dist * std::cos(timer);
-		sun_position.y = sun_dist * std::sin(timer);
+		sun_position.x = sun_dist * std::cos(timer/8640.f);
+		sun_position.y = sun_dist * std::sin(timer/8640.f);
 		while (window.pollEvent(event))
 		{
 			if (event.type == sfe::Closed || (event.type == sfe::KeyPressed && event.key.code == sfk::Escape))
@@ -323,15 +326,16 @@ int main(int argc, char* argv[])
 
 
 		}
-		if (sfk::isKeyPressed(sfk::Left)) camera.moveLeft(move_speed);
-		if (sfk::isKeyPressed(sfk::Right)) camera.moveRight(move_speed);
-		if (sfk::isKeyPressed(sfk::Up)) camera.moveUp(move_speed);
-		if (sfk::isKeyPressed(sfk::Down)) camera.moveDown(move_speed);
+		if (sfk::isKeyPressed(sfk::Space)) camera.moveUp(move_speed);
+		if (sfk::isKeyPressed(sfk::LControl)) camera.moveDown(move_speed);
 
 		if (sfk::isKeyPressed(sfk::W)) camera.moveForward(move_speed);
 		if (sfk::isKeyPressed(sfk::S)) camera.moveBackward(move_speed);
-		if (sfk::isKeyPressed(sfk::A)) camera.moveLeft(move_speed);
-		if (sfk::isKeyPressed(sfk::D)) camera.moveRight(move_speed);
+		if (sfk::isKeyPressed(sfk::A) || sfk::isKeyPressed(sfk::Left)) camera.moveLeft(move_speed);
+		if (sfk::isKeyPressed(sfk::D) || sfk::isKeyPressed(sfk::Right)) camera.moveRight(move_speed);
+
+		if (sfk::isKeyPressed(sfk::Up)) timer_multiplier += 0.01f;
+		if (sfk::isKeyPressed(sfk::Down)) timer_multiplier -= 0.01f;
 
 		drawScene();
 		window.display();
