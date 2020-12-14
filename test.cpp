@@ -26,6 +26,8 @@ float timer = 0.0;
 sf::Texture TEXid;
 sf::Shader shader[1];
 
+sf::Texture earth_texture;
+
 constexpr size_t water_polygons = 500;
 
 sf::Vector3f flag[water_polygons][water_polygons]; //new
@@ -54,6 +56,7 @@ void initOpenGL(void)
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, light_ambient_global);
 
 	TEXid.loadFromFile("water.jpg");
+	earth_texture.loadFromFile("flat_earth_texture.png");
 
 	shader[0].loadFromFile("shader_3.vert", "shader_3.frag");
 
@@ -145,6 +148,12 @@ void drawScene()
 	for (int x = 0; x < water_polygons - 1; x++)
 		for (int y = 0; y < water_polygons - 1; y++)
 		{
+			float tmp_x = static_cast<float>(x) / water_polygons * 2.0f - 1.0f;
+			float tmp_y = static_cast<float>(y) / water_polygons * 2.0f - 1.0f;
+
+			if (tmp_x * tmp_x + tmp_y * tmp_y > 0.95f)
+				continue;
+
 			glTexCoordsf(flag_texcoord[x][y]);         glVertexsf(flag[x][y]);
 			glTexCoordsf(flag_texcoord[x + 1][y]);     glVertexsf(flag[x + 1][y]);
 			glTexCoordsf(flag_texcoord[x + 1][y + 1]); glVertexsf(flag[x + 1][y + 1]);
@@ -158,21 +167,37 @@ void drawScene()
 	//----------- end new ---------------------------
 	
 
-	glDisable(GL_COLOR_MATERIAL);
+	// glDisable(GL_COLOR_MATERIAL);
 	glPushMatrix();
-	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, PolishedGoldAmbient);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, PolishedGoldDiffuse);
-	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, PolishedGoldSpecular);
-	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, PolishedGoldShininess);
+	glEnable(GL_TEXTURE_2D);
+	sf::Texture::bind(&earth_texture);
+	// glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, PolishedGoldAmbient);
+	// glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, PolishedGoldDiffuse);
+	// glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, PolishedGoldSpecular);
+	// glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, PolishedGoldShininess);
 	// glColor3f(1.0f, 0.0f, 0.0f);
 	glRotatef(90.0f, 1, 0, 0);
 	glTranslatef(0, -0.1, 0);
 	glBegin(GL_TRIANGLES);
-	for (auto&& iter : flat_earth_vertices)
-		glVertexsf(iter);
+		/*
+	for (auto&& iter : flat_earth_vertices) {
+		float val = iter.x * iter.x + iter.z * iter.z;
+		val = std::abs(val * 2 - 1) > 0.5f ? 1.0f : 0.0f;
+		if (val < 0.5f)
+			glColor3f(0, 1.0f, 0);
+		else
+			glColor3f(1, 1.0f, 1);
+			*/
+	for(size_t iter = 0; iter < flat_earth_vertices.size(); ++iter) {
+
+		glTexCoord2f(0.5f*flat_earth_vertices[iter].x+ 0.5f, 0.5f*flat_earth_vertices[iter].z+0.5f);
+
+		glVertexsf(flat_earth_vertices[iter]);
+	}
 	glEnd();
+	glDisable(GL_TEXTURE_2D);
 	glPopMatrix();
-	glEnable(GL_COLOR_MATERIAL);
+	// glEnable(GL_COLOR_MATERIAL);
 
 	/*
 	// printing flat earth model
