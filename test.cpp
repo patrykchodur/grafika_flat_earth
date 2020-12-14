@@ -2,9 +2,18 @@
 #include <iostream>
 #include <cmath>
 #include "coordinates.hpp"
+#include "objloader.hpp"
 
 typedef sf::Event sfe;
 typedef sf::Keyboard sfk;
+
+void checkGLError()
+{
+    GLenum err;
+    while((err = glGetError()) != GL_NO_ERROR){
+        std::cerr << err;
+    }
+}
 
 
 Spherical light_position(4.0f, 0.2f, 1.2f);
@@ -21,6 +30,13 @@ constexpr size_t water_polygons = 500;
 
 sf::Vector3f flag[water_polygons][water_polygons]; //new
 sf::Vector2f flag_texcoord[water_polygons][water_polygons]; //new
+
+std::vector<sf::Vector3f> flat_earth_vertices;
+std::vector<sf::Vector2f> flat_earth_uvs;
+std::vector<sf::Vector3f> flat_earth_normals;
+
+GLuint flat_earth_vertexbuffer;
+GLuint flat_earth_uvbuffer;
 
 constexpr auto move_speed = 0.01f;
 constexpr auto look_speed = 2.0f;
@@ -92,6 +108,8 @@ void drawScene()
 	GLfloat light0_position[4] = { light_position.getX(), light_position.getY(), light_position.getZ(), 0.0f }; 
 	glLightfv(GL_LIGHT0, GL_POSITION, light0_position); 
 
+	glDepthFunc(GL_NEVER);
+
 	glDisable(GL_LIGHTING);
 	glBegin(GL_LINES);
 	glColor3f(1.0, 0.0, 0.0); glVertex3f(0, 0, 0); glVertex3f(1.0, 0, 0);
@@ -142,7 +160,80 @@ void drawScene()
 	//----------- end new ---------------------------
 	
 
+	glColor3f(0.0f, 0.0f, 0.0f);
+	glRotatef(90.0f, 1, 0, 0);
+	glTranslatef(0, -0.1, 0);
+	glBegin(GL_TRIANGLES);
+	for (auto&& iter : flat_earth_vertices)
+		glVertexsf(iter);
+	glEnd();
+
+	/*
 	// printing flat earth model
+	// 1rst attribute buffer : vertices
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, flat_earth_vertexbuffer);
+	glVertexAttribPointer(
+			0,                  // attribute
+			3,                  // size
+			GL_FLOAT,           // type
+			GL_FALSE,           // normalized?
+			0,                  // stride
+			(void*)0            // array buffer offset
+			);
+
+	// 2nd attribute buffer : UVs
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, flat_earth_uvbuffer);
+	glVertexAttribPointer(
+			1,                                // attribute
+			2,                                // size
+			GL_FLOAT,                         // type
+			GL_FALSE,                         // normalized?
+			0,                                // stride
+			(void*)0                          // array buffer offset
+			);
+
+	// Draw the triangle !
+	glDrawArrays(GL_TRIANGLES, 0, flat_earth_vertices.size() );
+
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	*/
+
+}
+
+void load_flat_earth() {
+		// Read our .obj file
+	bool res = loadOBJ("flat_earth.obj", flat_earth_vertices, flat_earth_uvs, flat_earth_normals);
+	if (!res)
+		std::cout << "Error loading earth\n";
+
+	// Load it into a VBO
+	
+	std::vector<float> tmp_buffer;
+	tmp_buffer.reserve(flat_earth_vertices.size());
+
+	for (auto&& iter : flat_earth_vertices) {
+		tmp_buffer.emplace_back(iter.x);
+		tmp_buffer.emplace_back(iter.y);
+		tmp_buffer.emplace_back(iter.z);
+	}
+
+	glGenBuffers(1, &flat_earth_vertexbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, flat_earth_vertexbuffer);
+	glBufferData(GL_ARRAY_BUFFER, flat_earth_vertices.size() * 3 * sizeof(float), &tmp_buffer[0], GL_STATIC_DRAW);
+
+	tmp_buffer.clear();
+
+	for (auto&& iter : flat_earth_uvs) {
+		tmp_buffer.emplace_back(iter.x);
+		tmp_buffer.emplace_back(iter.y);
+	}
+
+	glGenBuffers(1, &flat_earth_uvbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, flat_earth_uvbuffer);
+	glBufferData(GL_ARRAY_BUFFER, flat_earth_uvs.size() * 2 * sizeof(float), &tmp_buffer[0], GL_STATIC_DRAW);
 }
 
 int main(int argc, char* argv[])
@@ -156,6 +247,8 @@ int main(int argc, char* argv[])
 	window.setVerticalSyncEnabled(true);
 	reshapeScreen(window.getSize());
 	initOpenGL();
+	
+	load_flat_earth();
 
 	while (running)
 	{
