@@ -25,7 +25,7 @@ float fov = 45.0f;
 float timer = 0.0;
 
 sf::Texture TEXid;
-sf::Shader shader[1];
+sf::Shader shader[2];
 
 sf::Texture earth_texture;
 
@@ -55,7 +55,7 @@ void initOpenGL(void)
 	glEnable(GL_NORMALIZE);
 	glEnable(GL_COLOR_MATERIAL);
 
-	GLfloat light_ambient_global[4] = { 0.5,0.5,0.5,1 };
+	GLfloat light_ambient_global[4] = { 0.01,0.01,0.01,1 };
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, light_ambient_global);
 
 	TEXid.loadFromFile("water.jpg");
@@ -97,6 +97,10 @@ void reshapeScreen(sf::Vector2u size)
 void glVertexsf(sf::Vector3f v)
 {
 	glVertex3f(v.x, v.y, v.z);
+}
+
+void glNormalsf(sf::Vector3f v) {
+	glNormal3f(v.x, v.y, v.z);
 }
 
 void drawScene()
@@ -256,6 +260,7 @@ void drawScene()
 			*/
 	for(size_t iter = 0; iter < flat_earth_vertices.size(); ++iter) {
 
+		glNormalsf(flat_earth_normals[iter] + sf::Vector3f(flat_earth_vertices[iter].x, flat_earth_vertices[iter].y, flat_earth_vertices[iter].z));
 		glTexCoord2f(0.5f*flat_earth_vertices[iter].x+ 0.5f, 0.5f*flat_earth_vertices[iter].z+0.5f);
 
 		glVertexsf(flat_earth_vertices[iter]);
