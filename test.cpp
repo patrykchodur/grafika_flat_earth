@@ -108,8 +108,6 @@ void drawScene()
 	GLfloat light0_position[4] = { light_position.getX(), light_position.getY(), light_position.getZ(), 0.0f }; 
 	glLightfv(GL_LIGHT0, GL_POSITION, light0_position); 
 
-	glDepthFunc(GL_NEVER);
-
 	glDisable(GL_LIGHTING);
 	glBegin(GL_LINES);
 	glColor3f(1.0, 0.0, 0.0); glVertex3f(0, 0, 0); glVertex3f(1.0, 0, 0);
@@ -160,13 +158,21 @@ void drawScene()
 	//----------- end new ---------------------------
 	
 
-	glColor3f(0.0f, 0.0f, 0.0f);
+	glDisable(GL_COLOR_MATERIAL);
+	glPushMatrix();
+	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, PolishedGoldAmbient);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, PolishedGoldDiffuse);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, PolishedGoldSpecular);
+	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, PolishedGoldShininess);
+	// glColor3f(1.0f, 0.0f, 0.0f);
 	glRotatef(90.0f, 1, 0, 0);
 	glTranslatef(0, -0.1, 0);
 	glBegin(GL_TRIANGLES);
 	for (auto&& iter : flat_earth_vertices)
 		glVertexsf(iter);
 	glEnd();
+	glPopMatrix();
+	glEnable(GL_COLOR_MATERIAL);
 
 	/*
 	// printing flat earth model
@@ -239,8 +245,8 @@ void load_flat_earth() {
 int main(int argc, char* argv[])
 {
 	bool running = true;
-	// sf::ContextSettings context(24, 0, 0, 4, 5);
-	sf::RenderWindow window(sf::VideoMode(800, 600), "Open GL Lab1 17"); // , 7U, context);
+	sf::ContextSettings context(24);// , 0, 0, 4, 1, sf::ContextSettings::Core);
+	sf::RenderWindow window(sf::VideoMode(800, 600), "Open GL Lab1 17", 7U, context);
 	sf::Clock clock;
 	sf::Vector2i mouse_last_position(0, 0);
 
