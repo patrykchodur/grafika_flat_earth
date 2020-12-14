@@ -7,34 +7,28 @@
 typedef sf::Event sfe;
 typedef sf::Keyboard sfk;
 
-void checkGLError()
-{
-    GLenum err;
-    while((err = glGetError()) != GL_NO_ERROR){
-        std::cerr << err;
-    }
-}
 
 Cartesian sun_position(0.6f, 0.0f, 0.6f);
-constexpr float sun_dist = 0.6f;
-Spherical light_position(4.0f, 0.2f, 1.2f);
 CartesianDirected camera({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f});
-sf::Vector3f pos(0.0f, 0.0f, 0.0f), scale(1.0f, 1.0f, 1.0f), rot(0.0f, 0.0f, 0.0f);
-unsigned char projection_type = 'p';
-float fov = 45.0f;
 float timer = 0.0;
 
 sf::Texture TEXid;
-sf::Shader shader[2];
+sf::Shader shader[1];
 
 sf::Texture earth_texture;
-
 sf::Texture skybox_texture;
 
 constexpr size_t water_polygons = 500;
+constexpr float skybox_width = 32.f;
+constexpr float sun_dist = 0.6f;
 
-sf::Vector3f flag[water_polygons][water_polygons]; //new
-sf::Vector2f flag_texcoord[water_polygons][water_polygons]; //new
+constexpr auto move_speed = 0.01f;
+constexpr auto look_speed = 2.0f;
+
+constexpr float fov = 45.0f;
+
+sf::Vector3f flag[water_polygons][water_polygons];
+sf::Vector2f flag_texcoord[water_polygons][water_polygons];
 
 std::vector<sf::Vector3f> flat_earth_vertices;
 std::vector<sf::Vector2f> flat_earth_uvs;
@@ -43,8 +37,6 @@ std::vector<sf::Vector3f> flat_earth_normals;
 GLuint flat_earth_vertexbuffer;
 GLuint flat_earth_uvbuffer;
 
-constexpr auto move_speed = 0.01f;
-constexpr auto look_speed = 2.0f;
 
 void initOpenGL(void)
 {
@@ -64,7 +56,6 @@ void initOpenGL(void)
 
 	shader[0].loadFromFile("shader_3.vert", "shader_3.frag");
 
-	// ----------------------- begin new -----------------------------------
 	for (int x = 0; x < water_polygons; x++)
 		for (int y = 0; y < water_polygons; y++)
 		{
@@ -75,7 +66,6 @@ void initOpenGL(void)
 			flag_texcoord[x][y].x = (flag[x][y].x + 1.0f) / 2.0f;
 			flag_texcoord[x][y].y = (flag[x][y].y + 1.0f) / 2.0f;
 		}
-	// ----------------------- end new -----------------------------------
 }
 
 void glTexCoordsf(sf::Vector2f v)
@@ -116,14 +106,16 @@ void drawScene()
 			northPoint.getX(), northPoint.getY(), northPoint.getZ()
 			);
 
+	// LIGHT SOURCE
 	GLfloat light0_position[4] = { sun_position.getX(), sun_position.getY(), sun_position.getZ(), 0.0f }; 
 	glLightfv(GL_LIGHT0, GL_POSITION, light0_position); 
 
 
+
+	// DRAWING SKYBOX
 	sf::Vector2f texture_corner;
-	float skybox_width = 32.f;
 	sf::Vector3f skybox_corner = {-skybox_width/2.f, -skybox_width/2.f + 0.01f, -skybox_width/2.f};
-	// drawing skybox
+
 	glDisable(GL_LIGHTING);
 	glEnable(GL_TEXTURE_2D);
 	sf::Texture::bind(&skybox_texture);
@@ -149,64 +141,33 @@ void drawScene()
 	draw_box(texture_corner, skybox_corner);
 
 	glRotatef(90.f, 0, 0, 1);
-
 	texture_corner = {1.f/4.f, 1.f/3.f};
 	draw_box(texture_corner, skybox_corner);
 
 	glRotatef(90.f, 0, 0, 1);
-
 	texture_corner = {2.f/4.f, 1.f/3.f};
 	draw_box(texture_corner, skybox_corner);
 
 	glRotatef(90.f, 0, 0, 1);
-
 	texture_corner = {3.f/4.f, 1.f/3.f};
 	draw_box(texture_corner, skybox_corner);
 
 	glRotatef(90.f, 1, 0, 0);
-
 	texture_corner = {2.f/4.f, 0.f/3.f};
 	draw_box(texture_corner, skybox_corner);
 
 	glRotatef(180.f, 1, 0, 0);
-
 	texture_corner = {2.f/4.f, 2.f/3.f};
 	draw_box(texture_corner, skybox_corner);
 
 
 	glPopMatrix();
-
-
 	glDisable(GL_TEXTURE_2D);
 	glEnable(GL_LIGHTING);
 	
 
-	glDisable(GL_LIGHTING);
-	glBegin(GL_LINES);
-	glColor3f(1.0, 0.0, 0.0); glVertex3f(0, 0, 0); glVertex3f(1.0, 0, 0);
-	glColor3f(0.0, 1.0, 0.0); glVertex3f(0, 0, 0); glVertex3f(0, 1.0, 0);
-	glColor3f(0.0, 0.0, 1.0); glVertex3f(0, 0, 0); glVertex3f(0, 0, 1.0);
-	glEnd();
 
-	glEnable(GL_LINE_STIPPLE);
-	glLineStipple(2, 0xAAAA);
-	glBegin(GL_LINES);
-	glColor3f(1.0, 0.0, 0.0); glVertex3f(0, 0, 0); glVertex3f(-1.0, 0, 0);
-	glColor3f(0.0, 1.0, 0.0); glVertex3f(0, 0, 0); glVertex3f(0, -1.0, 0);
-	glColor3f(0.0, 0.0, 1.0); glVertex3f(0, 0, 0); glVertex3f(0, 0, -1.0);
-	glEnd();
-	glDisable(GL_LINE_STIPPLE);
-
-	glTranslatef(pos.x, pos.y, pos.z);   
-	glRotatef(rot.x, 1, 0, 0);           
-	glRotatef(rot.y, 0, 1, 0);           
-	glRotatef(rot.z, 0, 0, 1);           
-	glScalef(scale.x, scale.y, scale.z); 
-
-	glEnable(GL_LIGHTING);
-
-
-	//------------------- begin new -------------------------------------------
+	// DRAWING WATER
 
 	glEnable(GL_TEXTURE_2D);
 	glColor3f(1.0f, 1.0f, 1.0f);
@@ -234,131 +195,56 @@ void drawScene()
 	sf::Shader::bind(NULL);
 	glDisable(GL_TEXTURE_2D);
 
-	//----------- end new ---------------------------
-	
 
-	// glDisable(GL_COLOR_MATERIAL);
-	glPushMatrix();
 	glEnable(GL_TEXTURE_2D);
 	sf::Texture::bind(&earth_texture);
-	// glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, PolishedGoldAmbient);
-	// glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, PolishedGoldDiffuse);
-	// glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, PolishedGoldSpecular);
-	// glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, PolishedGoldShininess);
-	// glColor3f(1.0f, 0.0f, 0.0f);
-	glRotatef(90.0f, 1, 0, 0);
-	glTranslatef(0, -0.1, 0);
-	glBegin(GL_TRIANGLES);
-		/*
-	for (auto&& iter : flat_earth_vertices) {
-		float val = iter.x * iter.x + iter.z * iter.z;
-		val = std::abs(val * 2 - 1) > 0.5f ? 1.0f : 0.0f;
-		if (val < 0.5f)
-			glColor3f(0, 1.0f, 0);
-		else
-			glColor3f(1, 1.0f, 1);
-			*/
-	for(size_t iter = 0; iter < flat_earth_vertices.size(); ++iter) {
+	glPushMatrix();
+		glRotatef(90.0f, 1, 0, 0);
+		glTranslatef(0, -0.1, 0);
+		glBegin(GL_TRIANGLES);
+		for(size_t iter = 0; iter < flat_earth_vertices.size(); ++iter) {
 
-		glNormalsf(flat_earth_normals[iter] + sf::Vector3f(flat_earth_vertices[iter].x, flat_earth_vertices[iter].y, flat_earth_vertices[iter].z));
-		glTexCoord2f(0.5f*flat_earth_vertices[iter].x+ 0.5f, 0.5f*flat_earth_vertices[iter].z+0.5f);
+			glNormalsf(flat_earth_normals[iter] + sf::Vector3f(flat_earth_vertices[iter].x, flat_earth_vertices[iter].y, flat_earth_vertices[iter].z));
+			glTexCoord2f(0.5f*flat_earth_vertices[iter].x+ 0.5f, 0.5f*flat_earth_vertices[iter].z+0.5f);
 
-		glVertexsf(flat_earth_vertices[iter]);
-	}
-	glEnd();
-	glDisable(GL_TEXTURE_2D);
+			glVertexsf(flat_earth_vertices[iter]);
+		}
+		glEnd();
 	glPopMatrix();
-	// glEnable(GL_COLOR_MATERIAL);
-
-	/*
-	// printing flat earth model
-	// 1rst attribute buffer : vertices
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, flat_earth_vertexbuffer);
-	glVertexAttribPointer(
-			0,                  // attribute
-			3,                  // size
-			GL_FLOAT,           // type
-			GL_FALSE,           // normalized?
-			0,                  // stride
-			(void*)0            // array buffer offset
-			);
-
-	// 2nd attribute buffer : UVs
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, flat_earth_uvbuffer);
-	glVertexAttribPointer(
-			1,                                // attribute
-			2,                                // size
-			GL_FLOAT,                         // type
-			GL_FALSE,                         // normalized?
-			0,                                // stride
-			(void*)0                          // array buffer offset
-			);
-
-	// Draw the triangle !
-	glDrawArrays(GL_TRIANGLES, 0, flat_earth_vertices.size() );
-
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
-	*/
+	glDisable(GL_TEXTURE_2D);
 
 
-	// drawing sun
+	// DRAWING SUN
 	GLUquadricObj* qobj = gluNewQuadric();
 	gluQuadricDrawStyle(qobj, GLU_FILL);
 	gluQuadricNormals(qobj, GLU_SMOOTH);
 
-	/*
-	glPushMatrix();
-	glColor3f(1.0f, 0.0f, 0.0f);
-	glTranslatef(0.75f, 0, 0);
-	glRotatef(300, 0, 0, 0);
-	gluCylinder(qobj, 0.25f, 0.5f, 0.25f, 15, 5);
-	glPopMatrix();
-	*/
-
-	// glDisable(GL_COLOR_MATERIAL);
 	glDisable(GL_LIGHTING);
 	glPushMatrix();
-	// glMaterialfv(GL_FRONT, GL_AMBIENT, PolishedGoldAmbient);
-	// glMaterialfv(GL_FRONT, GL_DIFFUSE, PolishedGoldDiffuse);
-	// glMaterialfv(GL_FRONT, GL_SPECULAR, PolishedGoldSpecular);
-	// glMaterialf(GL_FRONT, GL_SHININESS, PolishedGoldShininess);
-	glColor3f(1.0f, 1.0f, 0.8f);
-	glTranslatef(sun_position.getX(), sun_position.getY(), sun_position.getZ());
-	glRotatef(0, 0, 0, 0);
-	gluSphere(qobj, 0.07f, 50, 50);
+		glColor3f(1.0f, 1.0f, 0.8f);
+		glTranslatef(sun_position.getX(), sun_position.getY(), sun_position.getZ());
+		glRotatef(0, 0, 0, 0);
+		gluSphere(qobj, 0.07f, 50, 50);
 	glPopMatrix();
 	glEnable(GL_LIGHTING);
-	// glEnable(GL_COLOR_MATERIAL);
 
 	gluDeleteQuadric(qobj);
 
-	// drawing moon
+	// DRAWING MOON
 	qobj = gluNewQuadric();
 	gluQuadricDrawStyle(qobj, GLU_FILL);
 	gluQuadricNormals(qobj, GLU_SMOOTH);
 
-	/*
-	glPushMatrix();
-	glColor3f(1.0f, 0.0f, 0.0f);
-	glTranslatef(0.75f, 0, 0);
-	glRotatef(300, 0, 0, 0);
-	gluCylinder(qobj, 0.25f, 0.5f, 0.25f, 15, 5);
-	glPopMatrix();
-	*/
-
 	glDisable(GL_COLOR_MATERIAL);
 	glPushMatrix();
-	glMaterialfv(GL_FRONT, GL_AMBIENT, MoonAmbient);
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, MoonDiffuse);
-	glMaterialfv(GL_FRONT, GL_SPECULAR, MoonSpecular);
-	glMaterialf(GL_FRONT, GL_SHININESS, MoonShininess);
-	glColor3f(0, 0, 1.0f);
-	glTranslatef(-sun_position.getX(), -sun_position.getY(), sun_position.getZ());
-	glRotatef(0, 0, 0, 0);
-	gluSphere(qobj, 0.07f, 50, 50);
+		glMaterialfv(GL_FRONT, GL_AMBIENT, MoonAmbient);
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, MoonDiffuse);
+		glMaterialfv(GL_FRONT, GL_SPECULAR, MoonSpecular);
+		glMaterialf(GL_FRONT, GL_SHININESS, MoonShininess);
+		glColor3f(0, 0, 1.0f);
+		glTranslatef(-sun_position.getX(), -sun_position.getY(), sun_position.getZ());
+		glRotatef(0, 0, 0, 0);
+		gluSphere(qobj, 0.07f, 50, 50);
 	glPopMatrix();
 	glEnable(GL_COLOR_MATERIAL);
 
