@@ -21,3 +21,8 @@ const GLfloat YellowRubberAmbient [4] = { 0.050000f, 0.050000f, 0.000000f, 1.000
 const GLfloat YellowRubberDiffuse [4] = { 0.500000f, 0.500000f, 0.400000f, 1.000000f };
 const GLfloat YellowRubberSpecular [4] = { 0.7060000f, 0.700000f, 0.0460000f, 1.000000f };
 const GLfloat YellowRubberShininess = 10.0f;
+const GLfloat MoonAmbient [4] ={ 0.0f,0.0f,0.0f,1.0f };
+const GLfloat MoonDiffuse [4] ={ 0.55f,0.55f,0.55f,1.0f};
+const GLfloat MoonSpecular [4] ={0.70f,0.70f,0.70f,1.0f };
+const GLfloat MoonShininess = 32.0f ;
+

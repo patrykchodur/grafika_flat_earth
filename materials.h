@@ -29,3 +29,9 @@ extern const GLfloat YellowRubberAmbient [4];
 extern const GLfloat YellowRubberDiffuse [4];
 extern const GLfloat YellowRubberSpecular [4];
 extern const GLfloat YellowRubberShininess;
+
+// material ksiezycowy
+extern const GLfloat MoonAmbient [4];
+extern const GLfloat MoonDiffuse [4];
+extern const GLfloat MoonSpecular [4];
+extern const GLfloat MoonShininess;

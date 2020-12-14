@@ -351,10 +351,10 @@ void drawScene()
 
 	glDisable(GL_COLOR_MATERIAL);
 	glPushMatrix();
-	glMaterialfv(GL_FRONT, GL_AMBIENT, BronzeAmbient);
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, BronzeDiffuse);
-	glMaterialfv(GL_FRONT, GL_SPECULAR, BronzeSpecular);
-	glMaterialf(GL_FRONT, GL_SHININESS, BronzeShininess);
+	glMaterialfv(GL_FRONT, GL_AMBIENT, MoonAmbient);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, MoonDiffuse);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, MoonSpecular);
+	glMaterialf(GL_FRONT, GL_SHININESS, MoonShininess);
 	glColor3f(0, 0, 1.0f);
 	glTranslatef(-sun_position.getX(), -sun_position.getY(), sun_position.getZ());
 	glRotatef(0, 0, 0, 0);
